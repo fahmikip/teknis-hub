@@ -232,7 +232,7 @@ class DocumentController extends Controller
             'years' => Document::query()->select('year')->distinct()->orderByDesc('year')->pluck('year'),
             'categories' => Category::where('is_active', true)->orderBy('name')->get(),
             'documentTypes' => DocumentType::where('is_active', true)->orderBy('name')->get(),
-            'stages' => Stage::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+            'stages' => Stage::where('is_active', true)->orderBy('election_type')->orderBy('sort_order')->orderBy('name')->get(),
             'accessLevels' => AccessLevel::cases(),
         ];
     }

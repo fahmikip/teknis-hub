@@ -79,8 +79,12 @@
                         <label for="stage_id" class="label">Tahapan</label>
                         <select name="stage_id" id="stage_id" class="select">
                             <option value="">Semua Tahapan</option>
-                            @foreach ($filters['stages'] as $stage)
-                                <option value="{{ $stage->id }}" @selected(request('stage_id') == $stage->id)>{{ $stage->name }}</option>
+                            @foreach ($filters['stages']->groupBy(fn ($s) => $s->election_type?->value) as $electionValue => $groupedStages)
+                                <optgroup label="{{ $electionValue ? \App\Enums\ElectionType::from($electionValue)->label() : 'Lainnya' }}">
+                                    @foreach ($groupedStages as $stage)
+                                        <option value="{{ $stage->id }}" @selected(request('stage_id') == $stage->id)>{{ $stage->name }}</option>
+                                    @endforeach
+                                </optgroup>
                             @endforeach
                         </select>
                     </div>

@@ -63,8 +63,12 @@
                 <select id="stage_id" name="stage_id"
                         class="select @error('stage_id') border-danger @enderror">
                     <option value="">Pilih tahapan</option>
-                    @foreach ($filters['stages'] as $stage)
-                        <option value="{{ $stage->id }}" @selected(old('stage_id', $document?->stage_id) == $stage->id)>{{ $stage->name }}</option>
+                    @foreach ($filters['stages']->groupBy(fn ($s) => $s->election_type?->value) as $electionValue => $groupedStages)
+                        <optgroup label="{{ $electionValue ? \App\Enums\ElectionType::from($electionValue)->label() : 'Lainnya' }}">
+                            @foreach ($groupedStages as $stage)
+                                <option value="{{ $stage->id }}" @selected(old('stage_id', $document?->stage_id) == $stage->id)>{{ $stage->name }}</option>
+                            @endforeach
+                        </optgroup>
                     @endforeach
                 </select>
                 @error('stage_id')<x-input-error :messages="$message" class="mt-1" />@enderror
