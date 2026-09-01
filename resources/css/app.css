@@ -68,6 +68,14 @@
         @apply inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink;
     }
 
+    .btn-action {
+        @apply inline-flex items-center gap-1.5 rounded-md border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink shadow-sm hover:bg-app hover:border-brand hover:text-brand transition-colors;
+    }
+
+    .btn-action-danger {
+        @apply border-danger/30 text-danger hover:bg-red-50 hover:border-danger;
+    }
+
     .label {
         @apply block text-sm font-medium text-ink mb-1.5;
     }

@@ -168,10 +168,16 @@
                                     {{ $document->document_date ? $document->document_date->format('d/m/Y') : '—' }}
                                 </td>
                                 <td class="px-5 py-3">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <a href="{{ route('documents.show', $document) }}" class="btn-link px-2 py-1">Lihat</a>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{{ route('documents.show', $document) }}" class="btn-action">
+                                            <x-icon name="eye" size="14" />
+                                            Lihat
+                                        </a>
                                         @can('update', $document)
-                                            <a href="{{ route('documents.edit', $document) }}" class="btn-link px-2 py-1">Edit</a>
+                                            <a href="{{ route('documents.edit', $document) }}" class="btn-action">
+                                                <x-icon name="edit" size="14" />
+                                                Edit
+                                            </a>
                                         @endcan
                                     </div>
                                 </td>

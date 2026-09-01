@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
@@ -31,7 +32,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
  */
 $placeholderModules = [
     'favorites' => 'favorites.index',
-    'categories' => 'categories.index',
     'stages' => 'stages.index',
     'document-types' => 'document-types.index',
     'audit-logs' => 'audit-logs.index',
@@ -46,6 +46,8 @@ Route::middleware('auth')->group(function () use ($placeholderModules) {
         Route::get($uri, fn () => app(PageController::class)->placeholder($module))
             ->name($name);
     }
+
+    Route::resource('categories', CategoryController::class);
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

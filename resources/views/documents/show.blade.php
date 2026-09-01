@@ -38,20 +38,20 @@
                                   onsubmit="return confirm('Arsipkan dokumen ini? Dokumen dapat dipulihkan kembali.')">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-danger">
+                                <button type="submit" class="btn-danger">
                                     <x-icon name="archive" size="16" />
                                     Arsipkan
                                 </button>
                             </form>
                         @endcan
-                        <a href="#" class="btn-secondary opacity-50 pointer-events-none" aria-disabled="true" title="Tersedia pada fase berikutnya">
+                        <button type="button" class="btn-secondary" disabled title="Tersedia pada fase berikutnya">
                             <x-icon name="download" size="16" />
                             Download
-                        </a>
-                        <a href="#" class="btn-secondary opacity-50 pointer-events-none" aria-disabled="true" title="Tersedia pada fase berikutnya">
+                        </button>
+                        <button type="button" class="btn-secondary" disabled title="Tersedia pada fase berikutnya">
                             <x-icon name="external" size="16" />
                             Preview
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>
