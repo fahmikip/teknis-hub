@@ -55,67 +55,68 @@ autentikasi, navigasi, hingga manajemen dokumen dan kategori.
 
 ```mermaid
 flowchart TD
-    Start([Mulai / Buka Aplikasi]) --> IsGuest{Apakah sudah login?}
+    Start(["Mulai / Buka Aplikasi"])
+    Start --> IsGuest{"Apakah sudah login?"}
 
-    IsGuest -- Belum --> LoginPage[Halaman Login]
-    LoginPage --> CekLogin{Kredensial valid?}
-    CekLogin -- Tidak --> LoginError[Tampilkan error login] --> LoginPage
-    CekLogin -- Ya --> Dashboard[Dashboard]
+    IsGuest -- "Belum" --> LoginPage["Halaman Login"]
+    LoginPage --> CekLogin{"Kredensial valid?"}
+    CekLogin -- "Tidak" --> LoginError["Tampilkan error login"]
+    LoginError --> LoginPage
+    CekLogin -- "Ya" --> Dashboard["Dashboard"]
 
-    IsGuest -- Sudah --> Dashboard
+    IsGuest -- "Sudah" --> Dashboard
 
-    Dashboard --> Menu{Kelola menu di sidebar}
-    Menu -->|Dokumen| DocIndex[Daftar Dokumen]
-    Menu -->|Kategori| CatIndex[Kategori]
-    Menu -->|Referensi Lain| Placeholder[Halaman placeholder Fase berikutnya]
-    Menu -->|Profile| Profile[Keluar / Edit Profile]
+    Dashboard --> Menu{"Pilih menu"}
+    Menu -- "Dokumen" --> DocIndex["Daftar Dokumen"]
+    Menu -- "Kategori" --> CatIndex["Kategori"]
+    Menu -- "Referensi lain" --> Placeholder["Halaman placeholder fase berikutnya"]
+    Menu -- "Profil / Keluar" --> Profile["Edit profil / logout"]
 
-    %% ===== Alur Dokumen =====
-    subgraph DocCRUD [Manajemen Dokumen]
-        DocIndex --> DFilter[Cari / Filter / Urutkan]
-        DFilter -->|Lihat| DShow[Detail Dokumen]
-        DShow -->|Edit| DEdit[Form Edit Metadata]
-        DEdit -->|Simpan| DUpdate{Punya permisi edit_documents?}
-        DUpdate -- Ya --> DUpdOK[Halaman Update -> kembali ke Detail]
-        DUpdate -- Tidak --> D403A[403 Forbidden]
+    %% ===== Dokumen =====
+    DocIndex --> DShow["Detail Dokumen"]
+    DocIndex -- "Tambah" --> DCreate{"Punya permisi create_documents?"}
+    DCreate -- "Tidak" --> D403A["403 Forbidden"]
+    DCreate -- "Ya" --> DForm["Form Tambah + Upload PDF"]
+    DForm --> CekFile{"Upload PDF valid?"}
+    CekFile -- "Tidak" --> FErr["Tampilkan error validasi"]
+    FErr --> DForm
+    CekFile -- "Ya" --> DStore["Simpan + versi v1 + audit log"]
+    DStore --> DShow
 
-        DShow -->|Arsipkan| DArch{Punya permisi archive_documents?}
-        DArch -- Ya --> DArchOK[Hapus (soft delete) + Audit Log]
-        DArchOK --> DocIndex
-        DArch -- Tidak --> D403B[403 Forbidden]
+    DShow -- "Edit" --> DEdit["Form Edit Metadata"]
+    DEdit -- "Simpan" --> DUpdate{"Punya permisi edit_documents?"}
+    DUpdate -- "Tidak" --> D403B["403 Forbidden"]
+    DUpdate -- "Ya" --> DUpdOK["Perbarui metadata"]
+    DUpdOK --> DShow
 
-        DocIndex -->|Tambah| DCreate{Ada permisi create_documents?}
-        DCreate -- Ya --> DForm[Form Tambah + Upload PDF]
-        DCreate -- Tidak --> D403C[403 Forbidden]
-        DForm --> CekFile{Upload PDF valid?<br/>MIME + ukuran}
-        CekFile -- Tidak --> FErr[Tampilkan error validasi] --> DForm
-        CekFile -- Ya --> DStore[Simpan ke private storage<br/>+ buat versi v1 + audit log]
-        DStore --> DShow
-    end
+    DShow -- "Arsipkan" --> DArch{"Punya permisi archive_documents?"}
+    DArch -- "Tidak" --> D403C["403 Forbidden"]
+    DArch -- "Ya" --> DArchOK["Hapus (soft delete) + audit log"]
+    DArchOK --> DocIndex
 
-    %% ===== Alur Kategori =====
-    subgraph CatCRUD [Manajemen Kategori]
-        CatIndex -->|Tambah| CatCreate{Punya permisi manage_categories?}
-        CatCreate -- Ya --> CatForm[Form Tambah Kategori]
-        CatCreate -- Tidak --> C403A[403 Forbidden]
-        CatForm --> CatStore[Simpan + slug unik] --> CatIndex
+    %% ===== Kategori =====
+    CatIndex -- "Tambah" --> CatCreate{"Punya permisi manage_categories?"}
+    CatCreate -- "Tidak" --> C403A["403 Forbidden"]
+    CatCreate -- "Ya" --> CatForm["Form Tambah Kategori"]
+    CatForm -- "Simpan" --> CatStore["Simpan + slug unik"]
+    CatStore --> CatIndex
 
-        CatIndex -->|Edit| CatEdit[Form Edit] --> CatUpd[Perbarui kategori] --> CatIndex
+    CatIndex -- "Edit" --> CatEdit["Form Edit"]
+    CatEdit -- "Simpan" --> CatUpd["Perbarui kategori"]
+    CatUpd --> CatIndex
 
-        CatIndex -->|Hapus| CatDel{Dipakai dokumen?}
-        CatDel -- Ya --> CatBlocked[Tolak: masih terpakai] --> CatIndex
-        CatDel -- Tidak --> CatGone[Hapus kategori] --> CatIndex
-    end
-
-    DocCRUD --> Dashboard
-    CatCRUD --> Dashboard
+    CatIndex -- "Hapus" --> CatDel{"Masih dipakai dokumen?"}
+    CatDel -- "Ya" --> CatBlocked["Tolak: kategori terpakai"]
+    CatBlocked --> CatIndex
+    CatDel -- "Tidak" --> CatGone["Hapus kategori"]
+    CatGone --> CatIndex
 
     classDef page fill:#fff7ed,stroke:#c9a227,stroke-width:1px;
     classDef action fill:#fef2f2,stroke:#c8102e,stroke-width:1px;
     classDef decision fill:#ffffff,stroke:#6b7280,stroke-width:1px;
-    class LoginPage,Dashboard,DocIndex,CatIndex,DShow,DEdit,DForm,Placeholder,Profile page;
-    class LoginError,D403A,D403B,D403C,FErr,C403A,CatBlocked,DArchOK,DUpdOK action;
-    class IsGuest,CekLogin,DFilter,DUpdate,DArch,DCreate,CekFile,CatCreate,CatDel decision;
+    class LoginPage,Dashboard,DocIndex,CatIndex,DShow,DEdit,DForm,DStore,DUpdOK,DArchOK,CatForm,CatStore,CatEdit,CatUpd,CatGone,CatBlocked,Placeholder,Profile page;
+    class LoginError,D403A,D403B,D403C,FErr,C403A action;
+    class IsGuest,CekLogin,Menu,DCreate,CekFile,DUpdate,DArch,CatCreate,CatDel decision;
 ```
 
 ### Keterangan alur
