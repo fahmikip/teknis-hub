@@ -128,7 +128,15 @@ flowchart TD
    - Tanpa permisi → respons `403 Forbidden` dan tombol disembunyikan via `@can(...)`.
 3. **Upload PDF** — Dipvalidasi (MIME `application/pdf` + ukuran maks) sebelum disimpan ke `storage/app/private`. Versi awal (v1) dan audit log dibuat dalam satu transaksi.
 4. **Hapus kategori** — Ditolak bila masih digunakan oleh dokumen.
-5. **Arsip dokumen** — Menggunakan soft delete; file fisik tidak dihapus sehingga dokumen tetap dapat dipulihkan.
+ 5. **Arsip dokumen** — Menggunakan soft delete; file fisik tidak dihapus sehingga dokumen tetap dapat dipulihkan.
+
+---
+
+## Tampilan Aplikasi
+
+| Halaman Login | Dashboard |
+|---|---|
+| <img src="docs/screenshots/login.png" alt="Halaman Login" width="420"> | <img src="docs/screenshots/dashboard.png" alt="Dashboard" width="420"> |
 
 ---
 
