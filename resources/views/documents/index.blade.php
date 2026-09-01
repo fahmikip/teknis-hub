@@ -1,0 +1,209 @@
+<x-app-layout :title="'Dokumen'">
+
+    <div class="space-y-6">
+        <x-breadcrumb :crumbs="['Dashboard' => route('dashboard'), 'Dokumen' => null]" />
+
+        {{-- Header --}}
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+                <h1 class="text-xl font-semibold text-ink">Dokumen</h1>
+                <p class="mt-1 text-sm text-ink-muted">Kelola seluruh dokumen Divisi Teknis</p>
+            </div>
+            @can('create', App\Models\Document::class)
+                <a href="{{ route('documents.create') }}" class="btn-primary shrink-0">
+                    <x-icon name="plus" size="16" />
+                    Tambah Dokumen
+                </a>
+            @endcan
+        </div>
+
+        {{-- Filter & pencarian --}}
+        <form method="GET" action="{{ route('documents.index') }}" class="card" aria-label="Filter dokumen">
+            <div class="card-body space-y-4">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-light">
+                        <x-icon name="search" size="18" />
+                    </span>
+                    <input
+                        type="search"
+                        name="q"
+                        value="{{ request('q') }}"
+                        placeholder="Cari dokumen..."
+                        class="w-full rounded-md border-line bg-white pl-11 pr-4 py-2.5 text-sm text-ink placeholder:text-ink-light shadow-sm focus:border-brand focus:ring-brand"
+                    >
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <div>
+                        <label for="year" class="label">Tahun</label>
+                        <select name="year" id="year" class="select">
+                            <option value="">Semua Tahun</option>
+                            @foreach ($filters['years'] as $year)
+                                <option value="{{ $year }}" @selected(request('year') == $year)>{{ $year }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="category_id" class="label">Kategori</label>
+                        <select name="category_id" id="category_id" class="select">
+                            <option value="">Semua Kategori</option>
+                            @foreach ($filters['categories'] as $category)
+                                <option value="{{ $category->id }}" @selected(request('category_id') == $category->id)>{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="document_type_id" class="label">Jenis</label>
+                        <select name="document_type_id" id="document_type_id" class="select">
+                            <option value="">Semua Jenis</option>
+                            @foreach ($filters['documentTypes'] as $type)
+                                <option value="{{ $type->id }}" @selected(request('document_type_id') == $type->id)>{{ $type->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="stage_id" class="label">Tahapan</label>
+                        <select name="stage_id" id="stage_id" class="select">
+                            <option value="">Semua Tahapan</option>
+                            @foreach ($filters['stages'] as $stage)
+                                <option value="{{ $stage->id }}" @selected(request('stage_id') == $stage->id)>{{ $stage->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="status" class="label">Status</label>
+                        <select name="status" id="status" class="select">
+                            <option value="">Semua Status</option>
+                            @foreach (\App\Enums\DocumentStatus::cases() as $status)
+                                <option value="{{ $status->value }}" @selected(request('status') == $status->value)>{{ $status->label() }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="btn-secondary">
+                        <x-icon name="filter" size="16" />
+                        Terapkan
+                    </button>
+                    @if (count(request()->query()) > 0)
+                        <a href="{{ route('documents.index') }}" class="btn-link">Reset</a>
+                    @endif
+                </div>
+            </div>
+        </form>
+
+        {{-- Sort --}}
+        <div class="flex items-center justify-end text-sm">
+            <label for="sort" class="text-ink-muted mr-2">Urutkan:</label>
+            <form method="GET" action="{{ route('documents.index') }}" class="inline">
+                @foreach (request()->except(['sort', 'direction', 'page']) as $key => $value)
+                    @if (is_array($value))
+                        @foreach ($value as $v)
+                            <input type="hidden" name="{{ $key }}[]" value="{{ $v }}">
+                        @endforeach
+                    @else
+                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endif
+                @endforeach
+                <select name="sort" class="select w-auto" onchange="this.form.submit()">
+                    <option value="created_at" @selected(request('sort', 'created_at') == 'created_at')>Terbaru</option>
+                    <option value="title" @selected(request('sort') == 'title')>Judul</option>
+                    <option value="year" @selected(request('sort') == 'year')>Tahun</option>
+                    <option value="document_date" @selected(request('sort') == 'document_date')>Tanggal Dokumen</option>
+                </select>
+                <input type="hidden" name="direction" value="{{ request('direction', 'desc') }}">
+            </form>
+        </div>
+
+        {{-- Tabel --}}
+        <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-2xs uppercase tracking-wide text-ink-muted border-b border-line">
+                            <th class="px-5 py-3 font-medium w-12">No</th>
+                            <th class="px-5 py-3 font-medium">Dokumen</th>
+                            <th class="px-5 py-3 font-medium">Nomor</th>
+                            <th class="px-5 py-3 font-medium">Jenis</th>
+                            <th class="px-5 py-3 font-medium">Kategori</th>
+                            <th class="px-5 py-3 font-medium">Tahapan</th>
+                            <th class="px-5 py-3 font-medium">Tahun</th>
+                            <th class="px-5 py-3 font-medium">Status</th>
+                            <th class="px-5 py-3 font-medium">Tanggal</th>
+                            <th class="px-5 py-3 font-medium text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @forelse ($documents as $document)
+                            <tr class="hover:bg-app/60 transition-colors">
+                                <td class="px-5 py-3 text-ink-muted">{{ $documents->firstItem() + $loop->index }}</td>
+                                <td class="px-5 py-3">
+                                    <a href="{{ route('documents.show', $document) }}" class="font-medium text-ink hover:text-brand">
+                                        {{ $document->title }}
+                                    </a>
+                                </td>
+                                <td class="px-5 py-3 text-ink-muted">{{ $document->document_number ?? '—' }}</td>
+                                <td class="px-5 py-3">{{ $document->documentType?->name ?? '—' }}</td>
+                                <td class="px-5 py-3">{{ $document->category?->name ?? '—' }}</td>
+                                <td class="px-5 py-3 text-ink-muted">{{ $document->stage?->name ?? '—' }}</td>
+                                <td class="px-5 py-3">{{ $document->year }}</td>
+                                <td class="px-5 py-3">
+                                    @if ($document->status instanceof \App\Enums\DocumentStatus)
+                                        @php
+                                            $map = [
+                                                'draft' => 'neutral',
+                                                'active' => 'success',
+                                                'revised' => 'warning',
+                                                'invalid' => 'danger',
+                                                'archived' => 'gold',
+                                            ];
+                                        @endphp
+                                        <x-badge :color="$map[$document->status->value] ?? 'neutral'">{{ $document->status->label() }}</x-badge>
+                                    @else
+                                        <x-badge color="neutral">{{ $document->status }}</x-badge>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-3 text-ink-muted whitespace-nowrap">
+                                    {{ $document->document_date ? $document->document_date->format('d/m/Y') : '—' }}
+                                </td>
+                                <td class="px-5 py-3">
+                                    <div class="flex items-center justify-end gap-1">
+                                        <a href="{{ route('documents.show', $document) }}" class="btn-link px-2 py-1">Lihat</a>
+                                        @can('update', $document)
+                                            <a href="{{ route('documents.edit', $document) }}" class="btn-link px-2 py-1">Edit</a>
+                                        @endcan
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="10" class="px-5 py-16">
+                                    <div class="flex flex-col items-center justify-center text-center gap-3">
+                                        <span class="inline-flex items-center justify-center h-12 w-12 rounded-md bg-app border border-line text-ink-light">
+                                            <x-icon name="inbox" size="22" />
+                                        </span>
+                                        <div>
+                                            <p class="text-sm font-medium text-ink">Belum ada dokumen</p>
+                                            <p class="mt-1 text-2xs text-ink-muted max-w-xs">Belum ada dokumen yang tersimpan di TeknisHub.</p>
+                                        </div>
+                                        @can('create', App\Models\Document::class)
+                                            <a href="{{ route('documents.create') }}" class="btn-primary">Tambah Dokumen</a>
+                                        @endcan
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            @if ($documents->hasPages())
+                <div class="px-5 py-4 border-t border-line">
+                    {{ $documents->links() }}
+                </div>
+            @endif
+        </div>
+    </div>
+
+</x-app-layout>
