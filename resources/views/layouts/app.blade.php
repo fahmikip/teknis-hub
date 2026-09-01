@@ -76,8 +76,12 @@
                 {{ $slot }}
             </main>
 
-            <footer class="border-t border-line px-4 sm:px-6 py-3 text-2xs text-ink-muted">
-                &copy; {{ date('Y') }} TeknisHub — Sistem Manajemen Dokumen &amp; Informasi Divisi Teknis &middot; Developed by <a href="https://github.com/fahmikip" target="_blank" rel="noopener" class="hover:underline">github.com/fahmikip</a>
+            <footer class="border-t border-line px-4 sm:px-6 py-3 text-2xs text-ink-muted flex items-center justify-between gap-2">
+                <span>&copy; {{ date('Y') }} TeknisHub — Sistem Manajemen Dokumen &amp; Informasi Divisi Teknis</span>
+                <a href="https://github.com/fahmikip" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 hover:text-ink hover:underline">
+                    <x-icon name="github" size="14" />
+                    github.com/fahmikip
+                </a>
             </footer>
         </div>
     </div>
