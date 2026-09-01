@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -33,8 +35,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
  */
 $placeholderModules = [
     'favorites' => 'favorites.index',
-    'stages' => 'stages.index',
-    'document-types' => 'document-types.index',
     'audit-logs' => 'audit-logs.index',
     'users' => 'users.index',
     'roles' => 'roles.index',
@@ -49,6 +49,8 @@ Route::middleware('auth')->group(function () use ($placeholderModules) {
     }
 
     Route::resource('categories', CategoryController::class);
+    Route::resource('stages', StageController::class);
+    Route::resource('document-types', DocumentTypeController::class);
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
