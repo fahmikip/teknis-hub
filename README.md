@@ -48,6 +48,89 @@ Project dikerjakan secara bertahap. Saat ini berada pada **Fase 3 (Document Mana
 
 ---
 
+## Alur Aplikasi (Flowchart)
+
+Diagram di bawah menggambarkan alur utama pengguna dalam TeknisHub — mulai dari
+autentikasi, navigasi, hingga manajemen dokumen dan kategori.
+
+```mermaid
+flowchart TD
+    Start([Mulai / Buka Aplikasi]) --> IsGuest{Apakah sudah login?}
+
+    IsGuest -- Belum --> LoginPage[Halaman Login]
+    LoginPage --> CekLogin{Kredensial valid?}
+    CekLogin -- Tidak --> LoginError[Tampilkan error login] --> LoginPage
+    CekLogin -- Ya --> Dashboard[Dashboard]
+
+    IsGuest -- Sudah --> Dashboard
+
+    Dashboard --> Menu{Kelola menu di sidebar}
+    Menu -->|Dokumen| DocIndex[Daftar Dokumen]
+    Menu -->|Kategori| CatIndex[Kategori]
+    Menu -->|Referensi Lain| Placeholder[Halaman placeholder Fase berikutnya]
+    Menu -->|Profile| Profile[Keluar / Edit Profile]
+
+    %% ===== Alur Dokumen =====
+    subgraph DocCRUD [Manajemen Dokumen]
+        DocIndex --> DFilter[Cari / Filter / Urutkan]
+        DFilter -->|Lihat| DShow[Detail Dokumen]
+        DShow -->|Edit| DEdit[Form Edit Metadata]
+        DEdit -->|Simpan| DUpdate{Punya permisi edit_documents?}
+        DUpdate -- Ya --> DUpdOK[Halaman Update -> kembali ke Detail]
+        DUpdate -- Tidak --> D403A[403 Forbidden]
+
+        DShow -->|Arsipkan| DArch{Punya permisi archive_documents?}
+        DArch -- Ya --> DArchOK[Hapus (soft delete) + Audit Log]
+        DArchOK --> DocIndex
+        DArch -- Tidak --> D403B[403 Forbidden]
+
+        DocIndex -->|Tambah| DCreate{Ada permisi create_documents?}
+        DCreate -- Ya --> DForm[Form Tambah + Upload PDF]
+        DCreate -- Tidak --> D403C[403 Forbidden]
+        DForm --> CekFile{Upload PDF valid?<br/>MIME + ukuran}
+        CekFile -- Tidak --> FErr[Tampilkan error validasi] --> DForm
+        CekFile -- Ya --> DStore[Simpan ke private storage<br/>+ buat versi v1 + audit log]
+        DStore --> DShow
+    end
+
+    %% ===== Alur Kategori =====
+    subgraph CatCRUD [Manajemen Kategori]
+        CatIndex -->|Tambah| CatCreate{Punya permisi manage_categories?}
+        CatCreate -- Ya --> CatForm[Form Tambah Kategori]
+        CatCreate -- Tidak --> C403A[403 Forbidden]
+        CatForm --> CatStore[Simpan + slug unik] --> CatIndex
+
+        CatIndex -->|Edit| CatEdit[Form Edit] --> CatUpd[Perbarui kategori] --> CatIndex
+
+        CatIndex -->|Hapus| CatDel{Dipakai dokumen?}
+        CatDel -- Ya --> CatBlocked[Tolak: masih terpakai] --> CatIndex
+        CatDel -- Tidak --> CatGone[Hapus kategori] --> CatIndex
+    end
+
+    DocCRUD --> Dashboard
+    CatCRUD --> Dashboard
+
+    classDef page fill:#fff7ed,stroke:#c9a227,stroke-width:1px;
+    classDef action fill:#fef2f2,stroke:#c8102e,stroke-width:1px;
+    classDef decision fill:#ffffff,stroke:#6b7280,stroke-width:1px;
+    class LoginPage,Dashboard,DocIndex,CatIndex,DShow,DEdit,DForm,Placeholder,Profile page;
+    class LoginError,D403A,D403B,D403C,FErr,C403A,CatBlocked,DArchOK,DUpdOK action;
+    class IsGuest,CekLogin,DFilter,DUpdate,DArch,DCreate,CekFile,CatCreate,CatDel decision;
+```
+
+### Keterangan alur
+
+1. **Autentikasi** — Halaman `/` mengarahkan ke login bila belum masuk. Setelah masuk, pengguna mendarat di Dashboard.
+2. **Otorisasi** — Setiap aksi CRUD diperiksa lewat `Policy` + `Permission`:
+   - Dokumen: `view_documents`, `create_documents`, `edit_documents`, `archive_documents`
+   - Kategori: `manage_categories`
+   - Tanpa permisi → respons `403 Forbidden` dan tombol disembunyikan via `@can(...)`.
+3. **Upload PDF** — Dipvalidasi (MIME `application/pdf` + ukuran maks) sebelum disimpan ke `storage/app/private`. Versi awal (v1) dan audit log dibuat dalam satu transaksi.
+4. **Hapus kategori** — Ditolak bila masih digunakan oleh dokumen.
+5. **Arsip dokumen** — Menggunakan soft delete; file fisik tidak dihapus sehingga dokumen tetap dapat dipulihkan.
+
+---
+
 ## Requirements
 
 - PHP **^8.2** (direkomendasikan 8.2+)
