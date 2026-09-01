@@ -60,4 +60,28 @@ class DocumentFileService
     {
         return $this->disk;
     }
+
+    /**
+     * Periksa apakah file masih ada di disk privat.
+     */
+    public function exists(string $path): bool
+    {
+        return $path !== null && $path !== '' && Storage::disk($this->disk)->exists($path);
+    }
+
+    /**
+     * Ambil byte content file (untuk stream/preview).
+     */
+    public function content(string $path): string
+    {
+        return Storage::disk($this->disk)->get($path);
+    }
+
+    /**
+     * Baca satu baris redirect dari symlink web bila perlu (tidak digunakan pada disk privat).
+     */
+    public function relativePath(string $path): string
+    {
+        return $path;
+    }
 }

@@ -283,6 +283,12 @@
                                 </td>
                                 <td class="px-5 py-3">
                                     <div class="flex items-center justify-end gap-2">
+                                        <form method="POST" action="{{ route('favorites.toggle', $document) }}" class="inline">
+                                            @csrf
+                                            <button type="submit" class="btn-action" title="Tandai / hapus dari favorit">
+                                                <x-icon name="star" size="14" class="text-gold" />
+                                            </button>
+                                        </form>
                                         <a href="{{ route('documents.show', $document) }}" class="btn-action">
                                             <x-icon name="eye" size="14" />
                                             Lihat

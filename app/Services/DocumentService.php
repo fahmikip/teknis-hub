@@ -16,6 +16,11 @@ class DocumentService
     ) {
     }
 
+    public function fileService(): DocumentFileService
+    {
+        return $this->fileService;
+    }
+
     /**
      * Buat dokumen baru beserta file privat dan versi awal (v1) dalam satu transaksi.
      */
@@ -146,6 +151,77 @@ class DocumentService
             'notes' => 'Versi awal dokumen',
             'uploaded_by' => $actor->id,
         ]);
+    }
+
+    /**
+     * Tambahkan versi baru dokumen dari file PDF yang diunggah.
+     */
+    public function addVersion(Document $document, array $validated, User $actor): DocumentVersion
+    {
+        $nextVersion = ($document->versions()->max('version_number') ?? 0) + 1;
+        $file = $validated['file'];
+        $storedPath = $this->fileService->store($file, (int) $document->year);
+
+        try {
+            return DB::transaction(function () use ($document, $nextVersion, $storedPath, $file, $actor, $validated) {
+                $version = DocumentVersion::create([
+                    'document_id' => $document->id,
+                    'version_number' => $nextVersion,
+                    'file_path' => $storedPath,
+                    'original_filename' => $file->getClientOriginalName(),
+                    'mime_type' => $file->getMimeType(),
+                    'file_size' => $file->getSize(),
+                    'notes' => $validated['notes'] ?? null,
+                    'uploaded_by' => $actor->id,
+                ]);
+
+                $document->updated_by = $actor->id;
+                $document->save();
+
+                $this->log(
+                    actor: $actor,
+                    action: 'upload_version',
+                    subject: $version,
+                    description: sprintf(
+                        'User mengunggah versi baru (v%d) untuk dokumen "%s"',
+                        $version->version_number,
+                        $document->title
+                    ),
+                );
+
+                return $version;
+            });
+        } catch (Throwable $e) {
+            $this->fileService->delete($storedPath);
+            throw $e;
+        }
+    }
+
+    /**
+     * Hapus versi dokumen. Versi awal (v1) dilindungi agar dokumen tidak pernah tanpa file.
+     * File fisik ikut dihapus.
+     */
+    public function removeVersion(Document $document, DocumentVersion $version, User $actor): void
+    {
+        if ($version->version_number === 1) {
+            throw new \InvalidArgumentException('Versi awal dokumen tidak dapat dihapus.');
+        }
+
+        DB::transaction(function () use ($document, $version, $actor) {
+            $this->log(
+                actor: $actor,
+                action: 'delete_version',
+                subject: $version,
+                description: sprintf(
+                    'User menghapus versi (v%d) dari dokumen "%s"',
+                    $version->version_number,
+                    $document->title
+                ),
+            );
+
+            $this->fileService->delete($version->file_path);
+            $version->delete();
+        });
     }
 
     protected function log(User $actor, string $action, object $subject, string $description, ?array $metadata = null): void

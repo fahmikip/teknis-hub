@@ -18,7 +18,10 @@ aksen emas `#C9A227`, tanpa gradien maupun efek dekoratif berlebihan.
 
 ### Status Pengembangan
 
-Project dikerjakan secara bertahap. Saat ini berada pada **Fase 3 (Document Management, Upload & Metadata)**:
+Project dikerjakan secara bertahap. Saat ini berada pada **Fase 8 (Dashboard Statistik)** — seluruh
+fase inti (1–8) beserta modul pendukung (Favorit, Audit Log, Pengaturan) telah **selesai**, teruji
+(158 test pass), dan item Fase 9–11 (penyempurnaan UI/UX, keamanan, dan kesiapan produksi) sudah
+dilakukan sebagian: otorisasi per-permision, validasi menyeluruh, dan panduan deployment.
 
 ### Fase 1 (Foundation)
 - [x] Setup Laravel + MySQL + Authentication
@@ -42,9 +45,55 @@ Project dikerjakan secara bertahap. Saat ini berada pada **Fase 3 (Document Mana
 - [x] Private file storage (`storage/app/private`, tanpa URL publik langsung)
 - [x] Otorisasi via `DocumentPolicy` + permission Phase 2
 - [x] Audit log (create/update/archive)
-- [x] Listing: pagination, sorting (whitelist), filter dasar (tahun/kategori/jenis/tahapan/status), pencarian deskriptif sederhana
-- [x] Versi awal (v1) dibuat saat dokumen baru; manajemen versi → Fase 6
-- [ ] Fase 4+: pencarian lanjutan, preview & download aman, versioning, arsip penuh
+- [x] Listing: pagination, sorting (whitelist), filter (tahun/kategori/jenis/tahapan/status/akses/tanggal), pencarian deskriptif
+- [x] Versi awal (v1) dibuat saat dokumen baru
+
+### Fase 4 (Search & Filter)
+- [x] Pencarian lanjutan lintas kolom: judul, nomor, deskripsi, kata kunci, kategori, jenis, tahapan
+- [x] Filter kombinasi: tahun, kategori, jenis dokumen, tahapan (dikelompokkan per jenis pemilihan), status, access level, rentang tanggal
+- [x] Export CSV dari hasil pencarian/filter (streaming, charset UTF-8)
+- [x] Sort whitelist (created_at / title / year / document_date) + arah urut
+- [x] Navigasi stripe/pagination + "per page" (15/25/50/100)
+- [x] Uji otomatis lengkap (`DocumentSearchFilterTest`)
+
+### Fase 5 (Preview & Download Aman)
+- [x] Route & controller `documents.download` dan `documents.preview`
+- [x] Permission `download_documents` & `preview_documents` + `DocumentPolicy`
+- [x] Streaming file dari private disk (tanpa URL publik) + `Content-Disposition`
+- [x] 404 tertangani bila file tidak ada; file versi tertentu dapat diunduh
+- [x] Tombol Preview (tab baru) & Download pada detail dokumen
+
+### Fase 6 (Versioning & Arsip)
+- [x] Riwayat versi dengan penomoran otomatis (v1, v2, ...) pada detail dokumen
+- [x] Unggah versi baru (`documents.versions.store`) + catatan versi, terbatas permission `manage_document_versions`
+- [x] Hapus versi (`documents.versions.destroy`); **v1 dilindungi**
+- [x] Unduh per versi (`documents.versions.download`)
+- [x] Arsip (soft delete) + daftar arsip + restore
+- [x] `DocumentVersionTest` lengkap (9 kasus)
+
+### Fase 7 (User, Role & Permission Management)
+- [x] Manajemen pengguna: list (cari + filter role/status), tambah, edit, nonaktifkan
+- [x] Permission `view_users` / `create_users` / `edit_users` / `deactivate_users` + `UserPolicy`
+- [x] Proteksi admin: tidak dapat menonaktifkan diri sendiri maupun SUPER ADMIN
+- [x] Manajemen role & permission: CRUD role + sinkronisasi permission (checkbox per grup)
+- [x] Permission `manage_roles` + `RolePolicy`; role sistem (SUPER ADMIN/ADMIN/OPERATOR/VIEWER) tidak dapat dihapus
+- [x] Role yang masih dipakai pengguna tidak dapat dihapus; penghapusan memakai soft delete
+- [x] `UserCrudTest` (11) & `RoleCrudTest` (9)
+
+### Fase 8 (Dashboard Statistik)
+- [x] KPI: total dokumen, dokumen tahun berjalan, dokumen aktif, baru bulan ini, versi, arsip, jenis, jumlah favorit
+- [x] Statistik per status dokumen
+- [x] Dokumen terbaru (list + link detail)
+- [x] Aktivitas terbaru dari audit log
+- [x] Dokumen favorit pengguna
+- [x] `DashboardController` + `DashboardTest`
+
+### Modul Pendukung
+- [x] **Favorit** — toggle bintang (daftar & detail dokumen), halaman favorit sendiri, hapus/masuk-sendiri via `FavoriteController` + `FavoritePolicy`
+- [x] **Aktivitas (Audit Log)** — halaman riwayat dengan filter aksi/pengguna/pencarian; hanya `view_audit_logs`
+- [x] **Pengaturan** — identitas aplikasi/instansi, teks footer, ukuran upload maksimal; hanya `manage_settings` (SUPER ADMIN); nilai tersimpan pada tabel `settings`
+- [x] **Sidebar berbasis permission** — menu tersembunyi bila pengguna tidak punya hak akses
+- [x] Footer attribusi pengembang (github.com/fahmikip)
 
 ---
 
@@ -122,10 +171,12 @@ flowchart TD
 ### Keterangan alur
 
 1. **Autentikasi** — Halaman `/` mengarahkan ke login bila belum masuk. Setelah masuk, pengguna mendarat di Dashboard.
-2. **Otorisasi** — Setiap aksi CRUD diperiksa lewat `Policy` + `Permission`:
-   - Dokumen: `view_documents`, `create_documents`, `edit_documents`, `archive_documents`
-   - Kategori: `manage_categories`
-   - Tanpa permisi → respons `403 Forbidden` dan tombol disembunyikan via `@can(...)`.
+2. **Otorisasi** — Setiap aksi diperiksa lewat `Policy` + `Permission`:
+   - Dokumen: `view_documents`, `create_documents`, `edit_documents`, `archive_documents`, `restore_documents`, `download_documents`, `preview_documents`, `manage_document_versions`
+   - Referensi: `manage_categories`, `manage_stages`, `manage_document_types`
+   - Pengguna & role: `view_users`, `create_users`, `edit_users`, `deactivate_users`, `manage_roles`
+   - Sistem: `view_audit_logs`, `manage_settings`
+   - Tanpa permisi → respons `403 Forbidden`, tombol disembunyikan via `@can(...)`, dan menu disembunyikan di sidebar.
 3. **Upload PDF** — Dipvalidasi (MIME `application/pdf` + ukuran maks) sebelum disimpan ke `storage/app/private`. Versi awal (v1) dan audit log dibuat dalam satu transaksi.
 4. **Hapus kategori** — Ditolak bila masih digunakan oleh dokumen.
  5. **Arsip dokumen** — Menggunakan soft delete; file fisik tidak dihapus sehingga dokumen tetap dapat dipulihkan.
@@ -255,14 +306,15 @@ php artisan test
 vendor/bin/phpunit
 ```
 
-Ruang lingkup test saat ini: authentication (Breeze), RBAC seeder, render dashboard,
-relasi database (dokumen↔kategori/jenis/versi, favorit unik, audit polimorfik,
-hierarki tahapan, soft delete), dan manajemen dokumen (CRUD, otorisasi Viewer/Operator/Admin,
-upload/validasi PDF).
+Ruang lingkup test saat ini: authentication (Breeze), RBAC seeder, render dashboard, relasi
+database (dokumen↔kategori/jenis/versi, favorit unik, audit polimorfik, hierarki tahapan,
+soft delete), manajemen dokumen (CRUD, otorisasi Viewer/Operator/Admin, upload/validasi PDF,
+pencarian & filter, export CSV), download/preview/versioning dokumen, manajemen pengguna &
+role/permission, favorit, audit log, dan pengaturan — **158 test pass**.
 
 Lihat `docs/database.md` untuk dokumentasi skema database lengkap.
 
-## Module Dokumen (Fase 3)
+## Module Dokumen (Fase 3–6)
 
 Routes (resource `documents`):
 
@@ -271,10 +323,31 @@ Routes (resource `documents`):
 | GET | `/documents` | documents.index | Daftar + filter + pencarian + pagination |
 | GET | `/documents/create` | documents.create | Form tambah |
 | POST | `/documents` | documents.store | Simpan + upload + versi awal |
-| GET | `/documents/{document}` | documents.show | Detail + info file |
+| GET | `/documents/{document}` | documents.show | Detail + info file + riwayat versi |
 | GET | `/documents/{document}/edit` | documents.edit | Form edit metadata |
 | PUT | `/documents/{document}` | documents.update | Simpan perubahan |
 | DELETE | `/documents/{document}` | documents.destroy | Arsip (soft delete) |
+| GET | `/documents/{document}/download` | documents.download | Download PDF (stream privat) |
+| GET | `/documents/{document}/preview` | documents.preview | Preview PDF inline |
+| POST | `/documents/{document}/versions` | documents.versions.store | Unggah versi baru |
+| DELETE | `/documents/{document}/versions/{version}` | documents.versions.destroy | Hapus versi (v1 dilindungi) |
+| GET | `/documents/{document}/versions/{version}/download` | documents.versions.download | Download versi tertentu |
+| GET | `/documents/recent` | documents.recent | Daftar dokumen terbaru |
+| GET | `/documents/archived` | documents.archived | Daftar arsip (soft-deleted) |
+| PUT | `/documents/{document}/restore` | documents.restore | Pulihkan dari arsip |
+| GET | `/documents/export` | documents.export | Export CSV hasil filter |
+
+### Modul lain
+
+| Area | Routes utama | Permission |
+|---|---|---|
+| Favorit | `favorites.index`, `favorites.toggle/{document}`, `favorites.destroy/{favorite}` | Semua pengguna terautentikasi (favorit milik sendiri) |
+| Aktivitas | `audit-logs.index` | `view_audit_logs` |
+| Pengguna | `users.index/create/store/edit/update/destroy` | `view_users` / `create_users` / `edit_users` / `deactivate_users` |
+| Role & Permission | `roles.index/create/store/edit/update/destroy` | `manage_roles` |
+| Pengaturan | `settings.index`, `settings.update` | `manage_settings` |
+| Referensi | `categories`, `stages`, `document-types` (resource) | `manage_categories` / `manage_stages` / `manage_document_types` |
+| Dashboard | `GET /dashboard` | Terautentikasi |
 
 ### Konfigurasi upload (env)
 
@@ -311,10 +384,12 @@ npm install && npm run build
 ## Struktur Direktori Utama
 
 ```
-app/Http/Controllers/   Controller (termasuk PageController placeholder)
+app/Http/Controllers/   Controller (Dokumen, Kategori, Tahapan, Jenis, Pengguna, Role, Favorit, Aktivitas, Pengaturan, ...)
+app/Services/           Logika domain (DocumentService, DocumentFileService)
+app/Policies/           Policy per modul (otorisasi berdasarkan permission)
 app/Models/             Model (User, Role, Permission, ...)
 database/migrations/    Skema database
-database/seeders/       Seeder (roles, permissions, admin)
+database/seeders/       Seeder (roles, permissions, admin, master data, setting)
 resources/css/          Desain system (warna KPU, komponen Tailwind)
 resources/js/           Alpine.js
 resources/views/        Layout, komponen Blade, halaman
@@ -335,11 +410,11 @@ routes/web.php          Definisi route
 
 - **Fase 2** — ✅ Arsitektur database dokumen (kategori, tahapan, jenis, versi, favorit, audit) — selesai.
 - **Fase 3** — ✅ Manajemen dokumen (CRUD, upload, metadata, validasi, storage, otorisasi) — selesai.
-- **Fase 4** — Pencarian & filter.
-- **Fase 4** — Pencarian & filter.
-- **Fase 5** — Preview & download dengan otorisasi.
-- **Fase 6** — Versioning & arsip.
-- **Fase 7** — Manajemen pengguna, role, permission, policy.
-- **Fase 8** — Dashboard statistik.
-- **Fase 9–11** — Penyempurnaan UI/UX, keamanan, dan kesiapan produksi.
+- **Fase 4** — ✅ Pencarian & filter lanjutan + export CSV — selesai.
+- **Fase 5** — ✅ Preview & download dengan otorisasi — selesai.
+- **Fase 6** — ✅ Versioning & arsip — selesai.
+- **Fase 7** — ✅ Manajemen pengguna, role, permission, policy — selesai.
+- **Fase 8** — ✅ Dashboard statistik — selesai.
+- **Modul pendukung** — ✅ Favorit, Audit Log, Pengaturan — selesai.
+- **Fase 9–11** — Penyempurnaan UI/UX, keamanan, dan kesiapan produksi (sebagian sudah diterapkan sepanjang pengembangan; sisanya item lanjutan: notifikasi, backup, dan optimasi lanjutan).
 ```

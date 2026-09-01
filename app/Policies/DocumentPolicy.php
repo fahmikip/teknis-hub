@@ -36,4 +36,19 @@ class DocumentPolicy
     {
         return $user->hasPermission('archive_documents');
     }
+
+    public function download(User $user, Document $document): bool
+    {
+        return $user->hasPermission('download_documents');
+    }
+
+    public function preview(User $user, Document $document): bool
+    {
+        return $user->hasPermission('preview_documents');
+    }
+
+    public function manageVersions(User $user, Document $document): bool
+    {
+        return $user->hasPermission('manage_document_versions');
+    }
 }

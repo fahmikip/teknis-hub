@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,6 +16,13 @@ class DashboardPageTest extends TestCase
     {
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
+    }
+
+    protected function makeSuperAdmin(): User
+    {
+        $user = User::factory()->create();
+        $user->roles()->attach(Role::where('name', 'SUPER ADMIN')->firstOrFail());
+        return $user;
     }
 
     public function test_authenticated_user_can_view_dashboard(): void
@@ -35,7 +43,7 @@ class DashboardPageTest extends TestCase
 
     public function test_sidebar_navigation_links_are_rendered(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeSuperAdmin();
 
         $response = $this->actingAs($user)->get(route('dashboard'));
 

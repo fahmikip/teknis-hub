@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateDocumentRequest;
 use App\Models\Category;
 use App\Models\Document;
 use App\Models\DocumentType;
+use App\Models\DocumentVersion;
 use App\Models\Stage;
 use App\Services\DocumentService;
 use Illuminate\Http\Request;
@@ -69,7 +70,7 @@ class DocumentController extends Controller
     {
         $this->authorize('view', $document);
 
-        $document->load(['category:id,name', 'documentType:id,name', 'stage:id,name', 'creator:id,name', 'latestVersion']);
+        $document->load(['category:id,name', 'documentType:id,name', 'stage:id,name', 'creator:id,name', 'versions.uploader:id,name', 'latestVersion']);
 
         return view('documents.show', compact('document'));
     }
@@ -104,6 +105,111 @@ class DocumentController extends Controller
         return redirect()
             ->route('documents.index')
             ->with('success', 'Dokumen berhasil diarsipkan.');
+    }
+
+    public function download(Document $document)
+    {
+        $this->authorize('download', $document);
+
+        $version = $document->latestVersion;
+
+        if (! $version) {
+            abort(404, 'File dokumen tidak ditemukan.');
+        }
+
+        if (! $this->service->fileService()->exists($version->file_path)) {
+            abort(404, 'File dokumen tidak ditemukan.');
+        }
+
+        return response()->streamDownload(
+            function () use ($version) {
+                echo $this->service->fileService()->content($version->file_path);
+            },
+            $version->original_filename ?: ($document->title . '.pdf'),
+            ['Content-Type' => $version->mime_type ?? 'application/pdf'],
+        );
+    }
+
+    public function downloadVersion(DocumentVersion $version)
+    {
+        $document = $version->document;
+
+        $this->authorize('download', $document);
+
+        if (! $this->service->fileService()->exists($version->file_path)) {
+            abort(404, 'File dokumen tidak ditemukan.');
+        }
+
+        return response()->streamDownload(
+            function () use ($version) {
+                echo $this->service->fileService()->content($version->file_path);
+            },
+            $version->original_filename ?: ($document->title . '.pdf'),
+            ['Content-Type' => $version->mime_type ?? 'application/pdf'],
+        );
+    }
+
+    public function preview(Document $document)
+    {
+        $this->authorize('preview', $document);
+
+        $version = $document->latestVersion;
+
+        if (! $version) {
+            abort(404, 'File dokumen tidak ditemukan.');
+        }
+
+        if (! $this->service->fileService()->exists($version->file_path)) {
+            abort(404, 'File dokumen tidak ditemukan.');
+        }
+
+        return response()->stream(
+            function () use ($version) {
+                echo $this->service->fileService()->content($version->file_path);
+            },
+            200,
+            [
+                'Content-Type' => $version->mime_type ?? 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . ($version->original_filename ?? $document->title) . '"',
+            ],
+        );
+    }
+
+    public function storeVersion(Request $request, Document $document)
+    {
+        $this->authorize('manageVersions', $document);
+
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:pdf', 'max:' . (int) config('documents.max_upload_size_kb', 20480)],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $this->service->addVersion($document, $validated, $request->user());
+
+        return redirect()
+            ->route('documents.show', $document)
+            ->with('success', 'Versi baru berhasil diunggah.');
+    }
+
+    public function destroyVersion(Request $request, Document $document, DocumentVersion $version)
+    {
+        $this->authorize('manageVersions', $document);
+
+        if ($version->document_id !== $document->id) {
+            abort(404);
+        }
+
+        try {
+            $this->service->removeVersion($document, $version, $request->user());
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->route('documents.show', $document)
+                ->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('documents.show', $document)
+            ->with('success', 'Versi berhasil dihapus.');
     }
 
     public function archived(Request $request)

@@ -14,21 +14,21 @@
     @php
         $groups = [
             'Dokumen' => [
-                ['route' => 'documents.index', 'label' => 'Semua Dokumen', 'icon' => 'files'],
-                ['route' => 'documents.recent', 'label' => 'Dokumen Terbaru', 'icon' => 'file-text'],
-                ['route' => 'favorites.index', 'label' => 'Favorit', 'icon' => 'star'],
-                ['route' => 'documents.archived', 'label' => 'Arsip', 'icon' => 'archive'],
+                ['route' => 'documents.index', 'label' => 'Semua Dokumen', 'icon' => 'files', 'ability' => ['viewAny', App\Models\Document::class]],
+                ['route' => 'documents.recent', 'label' => 'Dokumen Terbaru', 'icon' => 'file-text', 'ability' => ['viewAny', App\Models\Document::class]],
+                ['route' => 'favorites.index', 'label' => 'Favorit', 'icon' => 'star', 'ability' => ['viewAny', App\Models\Favorite::class]],
+                ['route' => 'documents.archived', 'label' => 'Arsip', 'icon' => 'archive', 'ability' => ['viewAny', App\Models\Document::class]],
             ],
             'Referensi' => [
-                ['route' => 'categories.index', 'label' => 'Kategori', 'icon' => 'folder'],
-                ['route' => 'stages.index', 'label' => 'Tahapan', 'icon' => 'layers'],
-                ['route' => 'document-types.index', 'label' => 'Jenis Dokumen', 'icon' => 'tag'],
+                ['route' => 'categories.index', 'label' => 'Kategori', 'icon' => 'folder', 'ability' => ['viewAny', App\Models\Category::class]],
+                ['route' => 'stages.index', 'label' => 'Tahapan', 'icon' => 'layers', 'ability' => ['viewAny', App\Models\Stage::class]],
+                ['route' => 'document-types.index', 'label' => 'Jenis Dokumen', 'icon' => 'tag', 'ability' => ['viewAny', App\Models\DocumentType::class]],
             ],
             'Sistem' => [
-                ['route' => 'audit-logs.index', 'label' => 'Aktivitas', 'icon' => 'activity'],
-                ['route' => 'users.index', 'label' => 'Pengguna', 'icon' => 'users'],
-                ['route' => 'roles.index', 'label' => 'Role & Permission', 'icon' => 'shield'],
-                ['route' => 'settings.index', 'label' => 'Pengaturan', 'icon' => 'settings'],
+                ['route' => 'audit-logs.index', 'label' => 'Aktivitas', 'icon' => 'activity', 'ability' => ['viewAny', App\Models\AuditLog::class]],
+                ['route' => 'users.index', 'label' => 'Pengguna', 'icon' => 'users', 'ability' => ['viewAny', App\Models\User::class]],
+                ['route' => 'roles.index', 'label' => 'Role & Permission', 'icon' => 'shield', 'ability' => ['viewAny', App\Models\Role::class]],
+                ['route' => 'settings.index', 'label' => 'Pengaturan', 'icon' => 'settings', 'ability' => ['viewAny', App\Models\Setting::class]],
             ],
         ];
     @endphp
@@ -38,7 +38,7 @@
             <p class="px-3 pb-2 text-2xs font-semibold uppercase tracking-wider text-white/50">{{ $group }}</p>
             <ul class="space-y-0.5">
                 @foreach ($items as $item)
-                    @if (Route::has($item['route']))
+                    @if (Route::has($item['route']) && (auth()->user()->can(...$item['ability'])))
                         <li>
                             <a href="{{ route($item['route']) }}"
                                @class(['nav-item', 'nav-item-active' => request()->routeIs($item['route'], $item['route'] . '.*')])>
