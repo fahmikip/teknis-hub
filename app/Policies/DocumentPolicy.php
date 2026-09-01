@@ -31,4 +31,9 @@ class DocumentPolicy
     {
         return $user->hasPermission('archive_documents');
     }
+
+    public function restore(User $user, Document $document): bool
+    {
+        return $user->hasPermission('archive_documents');
+    }
 }

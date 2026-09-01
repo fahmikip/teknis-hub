@@ -77,7 +77,7 @@
             </main>
 
             <footer class="border-t border-line px-4 sm:px-6 py-3 text-2xs text-ink-muted">
-                &copy; {{ date('Y') }} TeknisHub — Sistem Manajemen Dokumen &amp; Informasi Divisi Teknis
+                &copy; {{ date('Y') }} TeknisHub — Sistem Manajemen Dokumen &amp; Informasi Divisi Teknis &middot; Developed by <a href="https://github.com/fahmikip" target="_blank" rel="noopener" class="hover:underline">github.com/fahmikip</a>
             </footer>
         </div>
     </div>

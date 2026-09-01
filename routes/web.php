@@ -18,10 +18,11 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Placeholder statis untuk modul yang dikembangkan pada fase berikutnya.
-    // Didefinisikan sebelum resource agar tidak tergerus oleh {document} wildcard.
-    Route::get('documents/recent', fn () => app(PageController::class)->placeholder('recent'))->name('documents.recent');
-    Route::get('documents/archived', fn () => app(PageController::class)->placeholder('archived'))->name('documents.archived');
+    // Route khusus dokumen (sebelum resource agar tidak tergerus {document} wildcard).
+    Route::get('documents/recent', [DocumentController::class, 'recent'])->name('documents.recent');
+    Route::get('documents/archived', [DocumentController::class, 'archived'])->name('documents.archived');
+    Route::get('documents/export', [DocumentController::class, 'export'])->name('documents.export');
+    Route::put('documents/{document}/restore', [DocumentController::class, 'restore'])->name('documents.restore');
 
     Route::resource('documents', DocumentController::class);
 });

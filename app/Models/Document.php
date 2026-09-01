@@ -89,4 +89,34 @@ class Document extends Model
     {
         return $this->status?->label() ?? (string) $this->status;
     }
+
+    public function scopeSearch($query, string $search): void
+    {
+        $query->where(function ($q) use ($search) {
+            $q->where('title', 'like', "%{$search}%")
+                ->orWhere('document_number', 'like', "%{$search}%")
+                ->orWhere('description', 'like', "%{$search}%")
+                ->orWhere('keywords', 'like', "%{$search}%")
+                ->orWhereHas('category', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                ->orWhereHas('documentType', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                ->orWhereHas('stage', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+        });
+    }
+
+    public function scopeFilterByAccessLevel($query, ?string $level): void
+    {
+        if ($level !== null && $level !== '') {
+            $query->where('access_level', $level);
+        }
+    }
+
+    public function scopeFilterByDateRange($query, ?string $from, ?string $to): void
+    {
+        if ($from !== null && $from !== '') {
+            $query->where('document_date', '>=', $from);
+        }
+        if ($to !== null && $to !== '') {
+            $query->where('document_date', '<=', $to);
+        }
+    }
 }
