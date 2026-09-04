@@ -1,17 +1,20 @@
 <?php
 
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StageController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\RateLimiter;
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -24,7 +27,7 @@ Route::get('/dashboard', DashboardController::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'throttle:document-actions'])->group(function () {
     // Route khusus dokumen (sebelum resource agar tidak tergerus {document} wildcard).
     Route::get('documents/recent', [DocumentController::class, 'recent'])->name('documents.recent');
     Route::get('documents/archived', [DocumentController::class, 'archived'])->name('documents.archived');
@@ -60,6 +63,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::patch('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::delete('notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::delete('notifications', [NotificationController::class, 'clearAll'])->name('notifications.clear-all');
+
+    Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
+    Route::post('backups/database', [BackupController::class, 'backupDatabase'])->name('backups.database');
+    Route::post('backups/files', [BackupController::class, 'backupFiles'])->name('backups.files');
+    Route::delete('backups/{filename}', [BackupController::class, 'destroy'])->name('backups.destroy');
 });
 
 Route::middleware('auth')->group(function () {

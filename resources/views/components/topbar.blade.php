@@ -33,14 +33,80 @@
             <x-icon name="search" size="20" />
         </button>
 
-        <button
-            type="button"
-            class="relative inline-flex items-center justify-center h-10 w-10 rounded-md text-ink-muted hover:bg-app hover:text-ink transition-colors"
-            aria-label="Notifikasi"
-        >
-            <x-icon name="bell" size="20" />
-            <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand ring-2 ring-white" aria-hidden="true"></span>
-        </button>
+        @php
+            $unreadCount = auth()->user()->unreadNotifications()->count();
+            $recentNotifications = auth()->user()->notifications()->latest()->limit(5)->get();
+        @endphp
+        <div class="relative" x-data="{ notifOpen: false }" @click.outside="notifOpen = false">
+            <button
+                type="button"
+                class="relative inline-flex items-center justify-center h-10 w-10 rounded-md text-ink-muted hover:bg-app hover:text-ink transition-colors"
+                @click="notifOpen = !notifOpen"
+                aria-label="Notifikasi"
+            >
+                <x-icon name="bell" size="20" />
+                @if ($unreadCount > 0)
+                    <span class="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-brand text-white text-2xs font-semibold px-1" aria-hidden="true">
+                        {{ $unreadCount > 99 ? '99+' : $unreadCount }}
+                    </span>
+                @endif
+            </button>
+
+            <div
+                x-show="notifOpen"
+                x-transition
+                x-cloak
+                class="absolute right-0 mt-2 w-80 origin-top-right rounded-md bg-surface border border-line shadow-card z-30"
+                role="menu"
+                @keydown.escape.window="notifOpen = false"
+            >
+                <div class="px-4 py-2.5 border-b border-line flex items-center justify-between">
+                    <p class="text-sm font-semibold text-ink">Notifikasi</p>
+                    @if ($unreadCount > 0)
+                        <form method="POST" action="{{ route('notifications.mark-all-read') }}">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="text-xs text-brand hover:underline">Tandai semua dibaca</button>
+                        </form>
+                    @endif
+                </div>
+                <div class="max-h-80 overflow-y-auto">
+                    @if ($recentNotifications->isEmpty())
+                        <div class="px-4 py-8 text-center">
+                            <p class="text-sm text-ink-muted">Tidak ada notifikasi</p>
+                        </div>
+                    @else
+                        @foreach ($recentNotifications as $notif)
+                            @php $d = $notif->data; @endphp
+                            <a href="{{ $d['document_id'] ?? '#' }}"
+                               class="flex items-start gap-3 px-4 py-3 hover:bg-app transition-colors {{ $notif->read_at === null ? 'bg-red-50/30' : '' }}">
+                                <span class="mt-0.5 shrink-0">
+                                    @if (($d['action'] ?? '') === 'created')
+                                        <x-icon name="plus" size="16" class="text-green-600" />
+                                    @elseif (($d['action'] ?? '') === 'updated')
+                                        <x-icon name="edit" size="16" class="text-blue-600" />
+                                    @elseif (($d['action'] ?? '') === 'version_uploaded')
+                                        <x-icon name="upload" size="16" class="text-amber-600" />
+                                    @else
+                                        <x-icon name="bell" size="16" class="text-ink-muted" />
+                                    @endif
+                                </span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs text-ink leading-snug line-clamp-2">{{ $d['message'] ?? '' }}</p>
+                                    <p class="mt-1 text-2xs text-ink-muted">{{ $notif->created_at->diffForHumans() }}</p>
+                                </div>
+                                @if ($notif->read_at === null)
+                                    <span class="mt-1 shrink-0 w-2 h-2 rounded-full bg-brand"></span>
+                                @endif
+                            </a>
+                        @endforeach
+                    @endif
+                </div>
+                <div class="border-t border-line px-4 py-2.5">
+                    <a href="{{ route('notifications.index') }}" class="text-xs text-brand hover:underline">Lihat semua notifikasi</a>
+                </div>
+            </div>
+        </div>
 
         <div class="ml-1 sm:ml-2 hidden sm:block h-6 w-px bg-line"></div>
 

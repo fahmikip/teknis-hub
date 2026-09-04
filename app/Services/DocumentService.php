@@ -6,6 +6,9 @@ use App\Models\AuditLog;
 use App\Models\Document;
 use App\Models\DocumentVersion;
 use App\Models\User;
+use App\Notifications\DocumentCreatedNotification;
+use App\Notifications\DocumentUpdatedNotification;
+use App\Notifications\DocumentVersionUploadedNotification;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -64,6 +67,8 @@ class DocumentService
             throw $e;
         }
 
+        $this->sendDocumentCreatedNotification($document, $actor);
+
         return $document;
     }
 
@@ -72,13 +77,16 @@ class DocumentService
      */
     public function updateDocument(Document $document, array $validated, User $actor): Document
     {
-        return DB::transaction(function () use ($document, $validated, $actor) {
+        $changedFields = [];
+
+        $document = DB::transaction(function () use ($document, $validated, $actor, &$changedFields) {
             $changed = [];
             foreach ($validated as $key => $value) {
                 if ($this->valuesDiffer($document->{$key}, $value)) {
                     $changed[] = $key;
                 }
             }
+            $changedFields = array_values(array_unique($changed));
 
             $document->update(array_merge($validated, ['updated_by' => $actor->id]));
 
@@ -87,11 +95,15 @@ class DocumentService
                 action: 'update_document',
                 subject: $document,
                 description: sprintf('User memperbarui dokumen "%s"', $document->title),
-                metadata: ['changed' => array_values(array_unique($changed))],
+                metadata: ['changed' => $changedFields],
             );
 
             return $document;
         });
+
+        $this->sendDocumentUpdatedNotification($document, $actor, $changedFields);
+
+        return $document;
     }
 
     protected function valuesDiffer(mixed $current, mixed $new): bool
@@ -163,7 +175,7 @@ class DocumentService
         $storedPath = $this->fileService->store($file, (int) $document->year);
 
         try {
-            return DB::transaction(function () use ($document, $nextVersion, $storedPath, $file, $actor, $validated) {
+            $version = DB::transaction(function () use ($document, $nextVersion, $storedPath, $file, $actor, $validated) {
                 $version = DocumentVersion::create([
                     'document_id' => $document->id,
                     'version_number' => $nextVersion,
@@ -195,6 +207,10 @@ class DocumentService
             $this->fileService->delete($storedPath);
             throw $e;
         }
+
+        $this->sendVersionUploadedNotification($document, $version, $actor);
+
+        return $version;
     }
 
     /**
@@ -236,5 +252,38 @@ class DocumentService
             'user_agent' => request()->userAgent(),
             'metadata' => $metadata,
         ]);
+    }
+
+    protected function sendDocumentCreatedNotification(Document $document, User $actor): void
+    {
+        $users = User::where('is_active', true)
+            ->where('id', '!=', $actor->id)
+            ->get();
+
+        foreach ($users as $user) {
+            $user->notify(new DocumentCreatedNotification($document, $actor->name));
+        }
+    }
+
+    protected function sendDocumentUpdatedNotification(Document $document, User $actor, array $changedFields): void
+    {
+        $users = User::where('is_active', true)
+            ->where('id', '!=', $actor->id)
+            ->get();
+
+        foreach ($users as $user) {
+            $user->notify(new DocumentUpdatedNotification($document, $actor->name, $changedFields));
+        }
+    }
+
+    protected function sendVersionUploadedNotification(Document $document, DocumentVersion $version, User $actor): void
+    {
+        $users = User::where('is_active', true)
+            ->where('id', '!=', $actor->id)
+            ->get();
+
+        foreach ($users as $user) {
+            $user->notify(new DocumentVersionUploadedNotification($document, $version, $actor->name));
+        }
     }
 }

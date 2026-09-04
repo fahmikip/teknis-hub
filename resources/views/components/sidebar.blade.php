@@ -26,8 +26,10 @@
             ],
             'Sistem' => [
                 ['route' => 'audit-logs.index', 'label' => 'Aktivitas', 'icon' => 'activity', 'ability' => ['viewAny', App\Models\AuditLog::class]],
+                ['route' => 'notifications.index', 'label' => 'Notifikasi', 'icon' => 'bell', 'ability' => ['viewAny', App\Models\User::class]],
                 ['route' => 'users.index', 'label' => 'Pengguna', 'icon' => 'users', 'ability' => ['viewAny', App\Models\User::class]],
                 ['route' => 'roles.index', 'label' => 'Role & Permission', 'icon' => 'shield', 'ability' => ['viewAny', App\Models\Role::class]],
+                ['route' => 'backups.index', 'label' => 'Backup', 'icon' => 'database', 'ability' => ['viewAny', App\Models\Setting::class]],
                 ['route' => 'settings.index', 'label' => 'Pengaturan', 'icon' => 'settings', 'ability' => ['viewAny', App\Models\Setting::class]],
             ],
         ];
