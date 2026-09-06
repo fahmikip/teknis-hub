@@ -1,11 +1,6 @@
-@extends('layouts.app')
-
-@section('content')
+<x-app-layout title="Backup">
     <x-slot name="breadcrumb">
-        <x-breadcrumb>
-            <x-breadcrumb-item href="{{ route('dashboard') }}">Dashboard</x-breadcrumb-item>
-            <x-breadcrumb-item>Backup</x-breadcrumb-item>
-        </x-breadcrumb>
+        <x-breadcrumb :crumbs="['Dashboard' => route('dashboard'), 'Backup' => null]" />
     </x-slot>
 
     <div class="max-w-4xl space-y-6">
@@ -110,4 +105,4 @@
             @endif
         </div>
     </div>
-@endsection
+</x-app-layout>

@@ -15,23 +15,25 @@
     <div class="flex-1 lg:hidden"></div>
 
     <div class="flex items-center gap-1 sm:gap-2">
-        <div class="hidden md:block relative">
+        <div class="hidden md:block relative" x-data="{ q: '' }">
             <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-ink-light">
                 <x-icon name="search" size="16" />
             </span>
             <input
                 type="search"
                 placeholder="Cari dokumen, nomor, kata kunci..."
+                x-model="q"
+                @keydown.enter="window.location.href = '{{ route('documents.index') }}?q=' + encodeURIComponent(q)"
                 class="w-56 lg:w-72 rounded-md border-line bg-app pl-9 pr-3 py-1.5 text-sm text-ink placeholder:text-ink-light focus:border-brand focus:ring-brand"
             >
         </div>
-        <button
-            type="button"
+        <a
+            href="{{ route('documents.index') }}"
             class="md:hidden inline-flex items-center justify-center h-10 w-10 rounded-md text-ink-muted hover:bg-app transition-colors"
             aria-label="Cari"
         >
             <x-icon name="search" size="20" />
-        </button>
+        </a>
 
         @php
             $unreadCount = auth()->user()->unreadNotifications()->count();
@@ -78,7 +80,7 @@
                     @else
                         @foreach ($recentNotifications as $notif)
                             @php $d = $notif->data; @endphp
-                            <a href="{{ $d['document_id'] ?? '#' }}"
+                            <a href="{{ isset($d['document_id']) ? route('documents.show', $d['document_id']) : '#' }}"
                                class="flex items-start gap-3 px-4 py-3 hover:bg-app transition-colors {{ $notif->read_at === null ? 'bg-red-50/30' : '' }}">
                                 <span class="mt-0.5 shrink-0">
                                     @if (($d['action'] ?? '') === 'created')

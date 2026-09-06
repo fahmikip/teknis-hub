@@ -6,6 +6,7 @@ use App\Enums\DocumentStatus;
 use App\Models\AuditLog;
 use App\Models\Document;
 use App\Models\DocumentType;
+use App\Models\DocumentVersion;
 use App\Models\Favorite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -22,7 +23,7 @@ class DashboardController extends Controller
             return [
                 'totalDocuments' => Document::count(),
                 'totalArchived' => Document::onlyTrashed()->count(),
-                'totalVersions' => Document::query()->withCount('versions')->get()->sum('versions_count'),
+                'totalVersions' => DocumentVersion::count(),
                 'currentYearDocuments' => Document::where('year', $currentYear)->count(),
                 'activeDocuments' => Document::where('status', DocumentStatus::Active->value)->count(),
                 'newThisMonth' => Document::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),

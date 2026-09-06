@@ -1,12 +1,11 @@
-@props(['collapsed' => false])
-
 <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-6" aria-label="Navigasi utama">
     <ul class="space-y-1">
         <li>
             <a href="{{ route('dashboard') }}"
-               @class(['nav-item', 'nav-item-active' => request()->routeIs('dashboard')])>
+               @class(['nav-item', 'nav-item-active' => request()->routeIs('dashboard')])
+               :class="sidebarCollapsed ? 'lg:justify-center' : ''">
                 <x-icon name="dashboard" size="18" class="{{ request()->routeIs('dashboard') ? 'text-gold' : 'text-white/70' }}" />
-                <span>Dashboard</span>
+                <span :class="sidebarCollapsed ? 'lg:hidden' : ''">Dashboard</span>
             </a>
         </li>
     </ul>
@@ -37,15 +36,17 @@
 
     @foreach ($groups as $group => $items)
         <div>
-            <p class="px-3 pb-2 text-2xs font-semibold uppercase tracking-wider text-white/50">{{ $group }}</p>
+            <p class="px-3 pb-2 text-2xs font-semibold uppercase tracking-wider text-white/50" :class="sidebarCollapsed ? 'lg:hidden' : ''">{{ $group }}</p>
             <ul class="space-y-0.5">
                 @foreach ($items as $item)
                     @if (Route::has($item['route']) && (auth()->user()->can(...$item['ability'])))
                         <li>
                             <a href="{{ route($item['route']) }}"
-                               @class(['nav-item', 'nav-item-active' => request()->routeIs($item['route'], $item['route'] . '.*')])>
+                               @class(['nav-item', 'nav-item-active' => request()->routeIs($item['route'], $item['route'] . '.*')])
+                               :class="sidebarCollapsed ? 'lg:justify-center lg:px-3' : ''"
+                               :title="sidebarCollapsed ? '{{ $item['label'] }}' : null">
                                 <x-icon name="{{ $item['icon'] }}" size="18" class="{{ request()->routeIs($item['route'], $item['route'] . '.*') ? 'text-gold' : 'text-white/70' }}" />
-                                <span>{{ $item['label'] }}</span>
+                                <span :class="sidebarCollapsed ? 'lg:hidden' : ''">{{ $item['label'] }}</span>
                             </a>
                         </li>
                     @endif

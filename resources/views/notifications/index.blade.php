@@ -1,11 +1,6 @@
-@extends('layouts.app')
-
-@section('content')
+<x-app-layout title="Notifikasi">
     <x-slot name="breadcrumb">
-        <x-breadcrumb>
-            <x-breadcrumb-item href="{{ route('dashboard') }}">Dashboard</x-breadcrumb-item>
-            <x-breadcrumb-item>Notifikasi</x-breadcrumb-item>
-        </x-breadcrumb>
+        <x-breadcrumb :crumbs="['Dashboard' => route('dashboard'), 'Notifikasi' => null]" />
     </x-slot>
 
     <div class="max-w-4xl space-y-6">
@@ -100,12 +95,11 @@
                 {{ $notifications->links() }}
             </div>
         @else
-            <div class="bg-surface border border-line rounded-lg px-6 py-12 text-center">
-                <div class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-app text-ink-muted mb-3">
-                    <x-icon name="bell" size="24" />
-                </div>
-                <p class="text-sm text-ink-muted">Tidak ada notifikasi.</p>
-            </div>
+            <x-empty-state
+                icon="bell"
+                title="Belum ada notifikasi"
+                description="Notifikasi aktivitas dokumen akan muncul di sini."
+            />
         @endif
     </div>
-@endsection
+</x-app-layout>

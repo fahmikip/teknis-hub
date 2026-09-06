@@ -22,6 +22,7 @@ class UserCrudTest extends TestCase
     {
         $user = User::factory()->create(['is_active' => true]);
         $user->roles()->attach(Role::where('name', $role)->firstOrFail());
+
         return $user;
     }
 
@@ -67,8 +68,8 @@ class UserCrudTest extends TestCase
             'name' => 'Dewi Lestari',
             'username' => 'dewi',
             'email' => 'dewi@test.dev',
-            'password' => 'rahasia123',
-            'password_confirmation' => 'rahasia123',
+            'password' => 'Rahasia123!',
+            'password_confirmation' => 'Rahasia123!',
             'is_active' => '1',
             'roles' => [$operatorRole->id],
         ]);
@@ -96,8 +97,8 @@ class UserCrudTest extends TestCase
                 'name' => 'Orang Baru',
                 'username' => 'orba',
                 'email' => 'sama@test.dev',
-                'password' => 'rahasia123',
-                'password_confirmation' => 'rahasia123',
+                'password' => 'Rahasia123!',
+                'password_confirmation' => 'Rahasia123!',
             ])
             ->assertSessionHasErrors('email');
     }

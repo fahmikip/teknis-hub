@@ -1,11 +1,11 @@
 <?php
 
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\HandleCors;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -18,8 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleCors::class,
         ]);
 
+        $middleware->prepend(SecurityHeaders::class);
+
         $middleware->alias([
-            'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+            'throttle' => ThrottleRequests::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

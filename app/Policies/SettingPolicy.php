@@ -15,4 +15,9 @@ class SettingPolicy
     {
         return $user->hasPermission('manage_settings');
     }
+
+    public function manageSettings(User $user): bool
+    {
+        return $user->hasPermission('manage_settings');
+    }
 }

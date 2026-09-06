@@ -18,10 +18,10 @@ aksen emas `#C9A227`, tanpa gradien maupun efek dekoratif berlebihan.
 
 ### Status Pengembangan
 
-Project dikerjakan secara bertahap. Saat ini berada pada **Fase 8 (Dashboard Statistik)** — seluruh
-fase inti (1–8) beserta modul pendukung (Favorit, Audit Log, Pengaturan) telah **selesai**, teruji
-(158 test pass), dan item Fase 9–11 (penyempurnaan UI/UX, keamanan, dan kesiapan produksi) sudah
-dilakukan sebagian: otorisasi per-permision, validasi menyeluruh, dan panduan deployment.
+Project dikerjakan secara bertahap. **Seluruh fase inti (1–11) telah selesai** — meliputi
+modul dokumentasi, pencarian, versi/arsip, manajemen pengguna & RBAC, dashboard statistik,
+modul pendukung (Favorit, Audit Log, Pengaturan, Notifikasi, Backup), serta penyempurnaan
+UI/UX (Fase 9), keamanan (Fase 10), dan kesiapan produksi (Fase 11). Teruji (158 test pass).
 
 ### Fase 1 (Foundation)
 - [x] Setup Laravel + MySQL + Authentication
@@ -87,6 +87,29 @@ dilakukan sebagian: otorisasi per-permision, validasi menyeluruh, dan panduan de
 - [x] Aktivitas terbaru dari audit log
 - [x] Dokumen favorit pengguna
 - [x] `DashboardController` + `DashboardTest`
+
+### Fase 9 (Penyempurnaan UI/UX)
+- [x] Halaman Notifikasi & Backup diselaraskan ke layout komponen (`<x-app-layout>`)
+- [x] Flash message otomatis menutup (toast-style dengan Alpine.js, auto-dismiss)
+- [x] Sidebar dapat diciutkan/diperluas di desktop (preferensi disimpan di localStorage)
+- [x] Komponen empty-state yang konsisten di seluruh halaman list
+- [x] Pencarian global pada topbar terhubung ke halaman dokumen
+- [x] Perbaikan tautan notifikasi pada dropdown topbar
+- [x] Halaman profil/kata sandi dialihkan ke bahasa Indonesia
+
+### Fase 10 (Penguatan Keamanan)
+- [x] Middleware `SecurityHeaders`: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `HSTS`, dan `Content-Security-Policy` (production)
+- [x] Konfigurasi sesi: `SESSION_HTTP_ONLY`, `SESSION_SAME_SITE`, `SESSION_SECURE_COOKIE`
+- [x] Penguatan kebijakan kata sandi: panjang minimum, campuran huruf/angka, cegah pola berurutan
+- [x] Variabel env `PASSWORD_MIN_LENGTH` yang dapat dikonfigurasi
+
+### Fase 11 (Kesiapan Produksi)
+- [x] Perintah `app:health` untuk memeriksa status DB, cache, dan storage
+- [x] Scheduler memakai nilai konfigurasi `config/backup.php` + logging kegagalan
+- [x] FULLTEXT index pada `documents` (title, document_number, description, keywords) untuk pencarian cepat di MySQL
+- [x] Optimasi query dashboard (penghitungan versi lewat agregat tunggal)
+- [x] Optimasi build asset Vite (manual chunk alpine/vendor, batas peringatan ukuran)
+- [x] Panduan deployment diperbarui (scheduler, queue worker, optimasi produksi)
 
 ### Modul Pendukung
 - [x] **Favorit** — toggle bintang (daftar & detail dokumen), halaman favorit sendiri, hapus/masuk-sendiri via `FavoriteController` + `FavoritePolicy`
@@ -381,6 +404,36 @@ php artisan migrate --force
 npm install && npm run build
 ```
 
+Setelah deploy, aktifkan **scheduler** dan **queue worker** (kronjob/daemon):
+
+```bash
+# Scheduler — tambahkan ke cron (setiap menit)
+* * * * * php /path/to/artisan schedule:run >> /dev/null 2>&1
+
+# Queue worker (untuk notifikasi asinkron)
+php artisan queue:work --daemon
+```
+
+Verifikasi kesehatan aplikasi:
+
+```bash
+php artisan app:health          # cek DB, cache, storage
+curl http://localhost/up        # health check bawaan Laravel
+```
+
+Optimasi produksi tambahan:
+
+```bash
+php artisan optimize            # gabungkan config/route/view cache
+php artisan config:cache && php artisan route:cache && php artisan view:cache
+```
+
+Konfigurasi penting untuk production di `.env`:
+- `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://...`
+- `SESSION_SECURE_COOKIE=true`, `SESSION_HTTP_ONLY=true`, `SESSION_SAME_SITE=lax`
+- `LOG_CHANNEL=daily`, `LOG_LEVEL=warning`
+- Pastikan `storage/`, `bootstrap/cache/`, dan direktori backup dapat ditulis.
+
 ## Struktur Direktori Utama
 
 ```
@@ -404,6 +457,10 @@ routes/web.php          Definisi route
 - File dokumen internal disimpan privat (`storage/app/private`) dan hanya diakses
   lewat controller terotorisasi; tidak ada URL publik langsung.
 - Validasi upload PDF menolak non-PDF dan file berukuran melebihi batas konfigurasi.
+- Security headers disuntikkan global (`SecurityHeaders`): anti clickjacking, MIME-sniffing,
+  referrer policy, permissions policy, HSTS, dan CSP ketat di production.
+- Kebijakan kata sandi yang diperkuat (panjang minimum + campuran + anti pola berurutan).
+- Rate limiting pada login (5/menit) dan aksi dokumen (30/menit).
 - Tidak ada data sensitif atau secret yang dicatat ke audit log / log.
 
 ## Roadmap
@@ -415,6 +472,8 @@ routes/web.php          Definisi route
 - **Fase 6** — ✅ Versioning & arsip — selesai.
 - **Fase 7** — ✅ Manajemen pengguna, role, permission, policy — selesai.
 - **Fase 8** — ✅ Dashboard statistik — selesai.
-- **Modul pendukung** — ✅ Favorit, Audit Log, Pengaturan — selesai.
-- **Fase 9–11** — Penyempurnaan UI/UX, keamanan, dan kesiapan produksi (sebagian sudah diterapkan sepanjang pengembangan; sisanya item lanjutan: notifikasi, backup, dan optimasi lanjutan).
+- **Modul pendukung** — ✅ Favorit, Audit Log, Pengaturan, Notifikasi, Backup — selesai.
+- **Fase 9** — ✅ Penyempurnaan UI/UX (layout konsisten, toast flash, sidebar collapse, empty-state, pencarian global) — selesai.
+- **Fase 10** — ✅ Penguatan keamanan (security headers, kebijakan sesi, penguatan kata sandi) — selesai.
+- **Fase 11** — ✅ Kesiapan produksi (health check, scheduler terkelola, FULLTEXT index, optimasi build & query, panduan deployment) — selesai.
 ```

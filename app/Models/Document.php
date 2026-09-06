@@ -93,8 +93,23 @@ class Document extends Model
 
     public function scopeSearch($query, string $search): void
     {
-        $query->where(function ($q) use ($search) {
-            $q->where('title', 'like', "%{$search}%")
+        $driver = $query->getConnection()->getDriverName();
+
+        $query->where(function ($q) use ($search, $driver) {
+            $q->where(function ($inner) use ($search, $driver) {
+                if ($driver === 'mysql') {
+                    $inner->whereRaw(
+                        'MATCH(title, document_number, description, keywords) AGAINST(? IN NATURAL LANGUAGE MODE)',
+                        [$search]
+                    );
+                } else {
+                    $inner->where('title', 'like', "%{$search}%")
+                        ->orWhere('document_number', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('keywords', 'like', "%{$search}%");
+                }
+            })
+                ->orWhere('title', 'like', "%{$search}%")
                 ->orWhere('document_number', 'like', "%{$search}%")
                 ->orWhere('description', 'like', "%{$search}%")
                 ->orWhere('keywords', 'like', "%{$search}%")

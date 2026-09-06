@@ -22,6 +22,8 @@
         'chevron-left' => '<polyline points="15 18 9 12 15 6"></polyline>',
         'chevron-right' => '<polyline points="9 18 15 12 9 6"></polyline>',
         'chevron-up' => '<polyline points="18 15 12 9 6 15"></polyline>',
+        'chevrons-left' => '<polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline>',
+        'chevrons-right' => '<polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline>',
         'plus' => '<line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>',
         'download' => '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>',
         'eye' => '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>',

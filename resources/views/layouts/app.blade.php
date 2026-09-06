@@ -11,7 +11,11 @@
     @stack('head')
 </head>
 <body class="h-full">
-    <div x-data="{ sidebarOpen: false }" class="h-full flex" @toggle-sidebar.window="sidebarOpen = !sidebarOpen">
+    <div
+        x-data="{ sidebarOpen: false, sidebarCollapsed: localStorage.getItem('teknishub.sidebar') === '1' }"
+        class="h-full flex"
+        @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
+    >
 
         {{-- Overlay mobile --}}
         <div
@@ -25,22 +29,38 @@
         {{-- Sidebar --}}
         <aside
             class="fixed inset-y-0 left-0 z-50 w-64 bg-ink text-white flex flex-col
-                   transform transition-transform duration-200 ease-out
+                   transform transition-all duration-200 ease-out
                    lg:translate-x-0 lg:static lg:z-30 lg:shrink-0"
-            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+            :class="[sidebarOpen ? 'translate-x-0' : '-translate-x-full', sidebarCollapsed ? 'lg:w-20' : 'lg:w-64']"
             x-cloak
             aria-label="Navigasi samping"
         >
-            <div class="h-16 px-4 flex items-center justify-between border-b border-white/10 shrink-0">
-                <x-application-logo markRed="true" />
-                <button
-                    type="button"
-                    class="lg:hidden inline-flex items-center justify-center h-9 w-9 rounded-md text-white/70 hover:bg-white/10 transition-colors"
-                    @click="sidebarOpen = false"
-                    aria-label="Tutup navigasi"
-                >
-                    <x-icon name="x" size="20" />
-                </button>
+            <div class="h-16 flex items-center justify-between px-4 border-b border-white/10 shrink-0 transition-all duration-200"
+                 :class="sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''">
+                <span class="flex items-center" :class="sidebarCollapsed ? 'lg:hidden' : ''">
+                    <x-application-logo markRed="true" />
+                </span>
+
+                <div class="flex items-center gap-1">
+                    <button
+                        type="button"
+                        class="hidden lg:inline-flex items-center justify-center h-9 w-9 rounded-md text-white/70 hover:bg-white/10 transition-colors"
+                        @click="sidebarCollapsed = !sidebarCollapsed; localStorage.setItem('teknishub.sidebar', sidebarCollapsed ? '1' : '0')"
+                        :title="sidebarCollapsed ? 'Perluas navigasi' : 'Ciutkan navigasi'"
+                        aria-label="Ciutkan atau perluas navigasi"
+                    >
+                        <x-icon name="chevrons-left" size="18" x-show="!sidebarCollapsed" x-cloak />
+                        <x-icon name="chevrons-right" size="18" x-show="sidebarCollapsed" x-cloak />
+                    </button>
+                    <button
+                        type="button"
+                        class="lg:hidden inline-flex items-center justify-center h-9 w-9 rounded-md text-white/70 hover:bg-white/10 transition-colors"
+                        @click="sidebarOpen = false"
+                        aria-label="Tutup navigasi"
+                    >
+                        <x-icon name="x" size="20" />
+                    </button>
+                </div>
             </div>
 
             <x-sidebar />
@@ -56,18 +76,18 @@
 
             {{-- Flash --}}
             @if (session('success') || session('error') || session('warning') || session('info'))
-                <div class="px-4 sm:px-6 pt-4">
+                <div class="fixed top-4 right-4 z-[60] w-full max-w-sm space-y-3 px-4 sm:px-0">
                     @if (session('success'))
-                        <x-alert type="success" message="{{ session('success') }}" />
+                        <x-alert type="success" message="{{ session('success') }}" dismissable />
                     @endif
                     @if (session('error'))
-                        <x-alert type="danger" message="{{ session('error') }}" />
+                        <x-alert type="danger" message="{{ session('error') }}" dismissable />
                     @endif
                     @if (session('warning'))
-                        <x-alert type="warning" message="{{ session('warning') }}" />
+                        <x-alert type="warning" message="{{ session('warning') }}" dismissable />
                     @endif
                     @if (session('info'))
-                        <x-alert type="info" message="{{ session('info') }}" />
+                        <x-alert type="info" message="{{ session('info') }}" dismissable />
                     @endif
                 </div>
             @endif
