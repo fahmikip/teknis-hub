@@ -91,12 +91,19 @@
                                     <td class="px-5 py-3 text-ink-muted">{{ $doc->category?->name ?? '—' }}</td>
                                     <td class="px-5 py-3 text-ink-muted">{{ $doc->year }}</td>
                                     <td class="px-5 py-3">
-                                        @if ($doc->status === App\Enums\DocumentStatus::Active->value)
-                                            <x-badge color="success">Aktif</x-badge>
-                                        @elseif ($doc->status === App\Enums\DocumentStatus::Archived->value)
-                                            <x-badge color="neutral">Arsip</x-badge>
+                                        @if ($doc->status instanceof App\Enums\DocumentStatus)
+                                            @php
+                                                $statusMap = [
+                                                    'draft' => 'neutral',
+                                                    'active' => 'success',
+                                                    'revised' => 'warning',
+                                                    'invalid' => 'danger',
+                                                    'archived' => 'gold',
+                                                ];
+                                            @endphp
+                                            <x-badge :color="$statusMap[$doc->status->value] ?? 'neutral'">{{ $doc->status->label() }}</x-badge>
                                         @else
-                                            <x-badge color="warning">Draft</x-badge>
+                                            <x-badge color="neutral">{{ $doc->status }}</x-badge>
                                         @endif
                                     </td>
                                     <td class="px-5 py-3 text-ink-muted whitespace-nowrap">{{ $doc->updated_at->format('d M Y') }}</td>
